@@ -1,0 +1,61 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+$resolv = <<-EOF
+cat > /etc/resolv.conf <<EOF2
+search consul
+nameserver 192.168.10.11
+nameserver 192.168.10.12
+nameserver 10.0.2.3
+EOF2
+EOF
+
+$consul = <<-EOF
+CONSULZIP=0.4.0_linux_amd64.zip
+cd /vagrant/
+[ -f $CONSULZIP ] || wget -N https://dl.bintray.com/mitchellh/consul/$CONSULZIP
+cd /usr/local/bin/
+unzip -n /vagrant/$CONSULZIP
+EOF
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.box = "kikitux/oracle6"
+
+   config.vm.provider "virtualbox" do |vb|
+  #   vb.gui = true
+     vb.customize ["modifyvm", :id, "--memory", "4096"]
+     vb.customize ["modifyvm", :id, "--cpus", "2"]
+   end
+
+  #enable daemon and start docker service
+  config.vm.provision "shell", inline: "chkconfig docker on"
+  config.vm.provision "shell", inline: "service docker status || service docker start"
+  config.vm.provision "shell", inline: $consul
+  config.vm.provision "shell", inline: "grep PEERDNS /etc/sysconfig/network-scripts/ifcfg-eth0 || echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-eth0"
+  config.vm.provision "shell", inline: $resolv
+  config.vm.provision "shell", inline: "echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload" 
+
+  config.vm.define "host1" do |host1|
+    host1.vm.hostname = "host1"
+    host1.vm.network "private_network", ip: "192.168.10.11"
+    host1.vm.network "forwarded_port", guest: 8500, host: 8501
+    host1.vm.provision "shell", inline: "[ $(docker images -q kikitux/oracle6) ] || docker pull kikitux/oracle6:latest"
+    host1.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
+    host1.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+  end
+
+  config.vm.define "host2" do |host2|
+    host2.vm.hostname = "host2"
+    host2.vm.network "private_network", ip: "192.168.10.12"
+    host2.vm.network "forwarded_port", guest: 8500, host: 8502
+    host2.vm.provision "shell", inline: "[ $(docker images -q kikitux/oracle6) ] || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar ; docker pull kikitux/oracle6:latest )"
+    host2.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+  end
+
+  config.vm.provision "shell", inline: " /usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
+
+end
