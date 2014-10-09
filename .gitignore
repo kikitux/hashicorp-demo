@@ -1,4 +1,4 @@
-*/.vagrant/
+*.vagrant
 *zip
 *log
 *tar

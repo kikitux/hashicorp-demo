@@ -2,7 +2,6 @@
 # vi: set ft=ruby :
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
-VAGRANTFILE_API_VERSION = "2"
 
 $resolv = <<-EOF
 cat > /etc/resolv.conf <<EOF2
@@ -15,13 +14,15 @@ EOF
 
 $consul = <<-EOF
 CONSULZIP=0.4.0_linux_amd64.zip
+CONSULUIZIP=0.4.0_web_ui.zip
 cd /vagrant/
 [ -f $CONSULZIP ] || wget -N https://dl.bintray.com/mitchellh/consul/$CONSULZIP
-cd /usr/local/bin/
-unzip -n /vagrant/$CONSULZIP
+[ -f $CONSULUIZIP ] || wget -N https://dl.bintray.com/mitchellh/consul/$CONSULUIZIP
+unzip -n /vagrant/$CONSULZIP -d /usr/local/bin/
+unzip -n /vagrant/$CONSULUIZIP -d /usr/local/ui
 EOF
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+Vagrant.configure("2") do |config|
 
   config.vm.box = "kikitux/oracle6"
 
@@ -42,20 +43,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "host1" do |host1|
     host1.vm.hostname = "host1"
     host1.vm.network "private_network", ip: "192.168.10.11"
-    host1.vm.network "forwarded_port", guest: 8500, host: 8501
+    host1.vm.network "forwarded_port", guest: 80, host: 8001
     host1.vm.provision "shell", inline: "[ $(docker images -q kikitux/oracle6) ] || docker pull kikitux/oracle6:latest"
     host1.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
-    host1.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host1.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
   end
 
   config.vm.define "host2" do |host2|
     host2.vm.hostname = "host2"
     host2.vm.network "private_network", ip: "192.168.10.12"
-    host2.vm.network "forwarded_port", guest: 8500, host: 8502
+    host2.vm.network "forwarded_port", guest: 80, host: 8002
     host2.vm.provision "shell", inline: "[ $(docker images -q kikitux/oracle6) ] || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar ; docker pull kikitux/oracle6:latest )"
-    host2.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host2.vm.provision "shell", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
   end
 
-  config.vm.provision "shell", inline: " /usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
+  config.vm.provision "shell", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
+  config.vm.provision "shell", inline: "yum install -y nginx ; chkconfig nginx on; cp /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
 
 end
