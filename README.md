@@ -13,37 +13,49 @@ This is a demo of consul, using Vagrant and Virtualbox.
 
 ### Filesystem structure
 
+In order to keep things simple, and put the focus on `consul`, this demo came with 3 folder :
+
     |-- consul1
     |   |-- docker-dc1
     |   |-- docker-dc2
     |   `-- host
 
+On each folder, there is a `Vagrantfile` so you can take this a module base, and adjust to a more complex scenario.
+
 ### First start docker host
 
 On host directory, a multi-machine will take care to start 2 vms for docker.
 
-These vms will be `host1` and `host2`, using `kikitux/oracle6` image.
+These vms will be `host1` and `host2`, using `kikitux/oracle6` image from [vagrantcloud](http://vagrantcloud.com)
 
-On first run, the base box will be downloaded, `kikitux/oracle6:latest` docker images will be pull, and consul will be downloaded.
-Consul zip files and the docker image will be exported to /vagrant, so the 2nd host machine and future run will be faster.
+As tipical since Vagrant 1.5+ on first run, the base box will be downloaded and the provisioners will be executed.
+
+As part of the setup, `kikitux/oracle6:latest` docker image will be pull, and consul will be downloaded.
+
+Consul zip files and the docker image will be exported to /vagrant, so the 2nd host machine and future run will be faster, not requiring to download these files again.
 
 Each host will create his own datacenter, and using a shell provisioner they will try to join the other datacenter.
 
-If on first run this doesn't happen, all the logic in the scripts is idempotent, so you are safe to run `vagrant provision`
+If on first run this doesn't happen, all the logic in the scripts is idempotent, so you are safe to run `vagrant provision` a 2nd time to make this to happen.
 
-Each host machine will download and configure nginx with proxy-pass to `localhost:8500/ui` and `localhost:8500/v1`, and nginx port will be exposed to the host.
+As part of this demo, in order to get exposure to the [consul-ui](http://www.consul.io/downloads_web_ui.html) each host machine will download and configure nginx with proxy-pass to `localhost:8500/ui` and `localhost:8500/v1`, and nginx port will be exposed to the host.
 
-Using vagrant networking, we will map `host:8001` to `host1:80` and  `host:8002` to `host2:80`
+Using vagrant networking, we will map 
+
+- `host:8001` to `host1:80`
+- `host:8002` to `host2:80`
+
+Once our base boxes have been createdm you cab access the consul ui, just point your browser on the host machine to `http://localhost:8001/ui`
 
 ![host1 dc1](https://lh5.googleusercontent.com/-68X2YSBqXFI/VDi7ZgJqSbI/AAAAAAAAAH4/8XnALOsWdvs/s0/2014-10-11_18-08-56.png)
 
-![host 2 dc2](https://lh5.googleusercontent.com/-61O-IMne90Y/VDi7qRozWiI/AAAAAAAAAIA/XObyNWt5nVU/s0/2014-10-11_18-10-03.png)
+![host2 dc2](https://lh5.googleusercontent.com/-61O-IMne90Y/VDi7qRozWiI/AAAAAAAAAIA/XObyNWt5nVU/s0/2014-10-11_18-10-03.png)
 
 On mac mini this take around 8 minutes with ssd and fast internet pipe. YMMV
 
 Now that both nodes are up and running we can run `vagrant provision` in order to ensure the 2 nodes connect to each other.
 
-This is done with a `consul join -wan <ip>`
+As we will connect 2 `dc`, this is done with a `consul join -wan <ip>`
 
 on node1:
 
@@ -65,11 +77,11 @@ Now both datacenters are connected, and they share what they manage, and both `d
 
 ![both_dc](https://lh5.googleusercontent.com/-JnUkCgQF3fQ/VDi-7RSrZxI/AAAAAAAAAIM/q7U1aQ3obR8/s0/2014-10-11_18-24-00.png)
 
-This is done with a simple shell provisiones for both nodes:
+This is done with a simple shell provisioner common for both nodes:
 
     config.vm.provision "shell", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
 
-Each node send consult logs to `/vagrant/consul_host<n>.log` so you can do a `tail -f consul_host*.log` to monitor what's going on in the hosts:
+As part of the configuration of the host machines, each node send consul logs to `/vagrant/consul_host<n>.log` so you can do a `tail -f consul_host*.log` to monitor what's going on in the hosts:
 
 Example:
 
@@ -158,7 +170,7 @@ Few minutes later, you should see the following on the log files:
 
  Repeat for dc2
 
- ###Docker containers on dc2
+###Docker containers on dc2
 
     cd ../docker-dc2
     vagrant up --provider=docker
@@ -186,9 +198,9 @@ After few minutes, our log file will show:
 
  ![nodes_dc2_from_dc1](https://lh3.googleusercontent.com/-YBCw5aapaFg/VDjCeJqCiYI/AAAAAAAAAIw/nLNZFvyb_DI/s0/2014-10-11_18-39-06.png)
 
- ### ssh into the containers
+### ssh into the containers
 
- From our directory for each dc, we can use `vagrant ssh <conainer>`, example:
+ From our directory for each dc, we can use `vagrant ssh <container>`, example:
 
     $ vagrant ssh dc1-db
     ==> dc1-db: SSH will be proxied through the Docker virtual machine since we're
