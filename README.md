@@ -26,11 +26,11 @@ On each folder, there is a `Vagrantfile` so you can take this a module base, and
 
 On host directory, a multi-machine will take care to start 2 vms for docker.
 
-These vms will be `host1` and `host2`, using `kikitux/oracle6` image from [vagrantcloud](http://vagrantcloud.com)
+These vms will be `host1` and `host2`, using [kikitux/oracle6](https://vagrantcloud.com/kikitux/boxes/oracle6) image from [vagrantcloud](http://vagrantcloud.com)
 
 As tipical since Vagrant 1.5+ on first run, the base box will be downloaded and the provisioners will be executed.
 
-As part of the setup, `kikitux/oracle6:latest` docker image will be pull, and consul will be downloaded.
+As part of the setup, [kikitux/oracle6:latest](https://registry.hub.docker.com/u/kikitux/oracle6) docker image will be pull, and consul will be downloaded.
 
 Consul zip files and the docker image will be exported to /vagrant, so the 2nd host machine and future run will be faster, not requiring to download these files again.
 
