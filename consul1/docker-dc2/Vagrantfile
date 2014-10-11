@@ -2,7 +2,7 @@ Vagrant.configure("2") do |config|
   config.vm.provider "docker" do |d|
     d.vagrant_vagrantfile = "../host/Vagrantfile"
     d.vagrant_machine = "host2"
-    d.build_dir = "Dockerfile/"
+    d.build_dir = "../host/Dockerfile/"
     d.has_ssh = false
     d.env = {DC: "dc2", JOIN: "192.168.10.12"}
   end
