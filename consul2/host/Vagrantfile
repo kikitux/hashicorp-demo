@@ -3,7 +3,7 @@
 
 $resolv = <<-EOF
 cat > /etc/resolv.conf <<EOF2
-search consul
+search consul node.dc1.consul node.dc2.consul
 nameserver 192.168.10.11
 nameserver 192.168.10.12
 nameserver 10.0.2.3
@@ -28,9 +28,14 @@ Vagrant.configure("2") do |config|
   #   vb.gui = true
      vb.customize ["modifyvm", :id, "--memory", "2048"]
      vb.customize ["modifyvm", :id, "--cpus", "2"]
+     vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+     vb.customize ["modifyvm", :id, "--nictype3", "Am79C973"]
    end
 
   #enable daemon and start docker service
+  config.vm.provision "shell", inline: "cp /vagrant/ifcfg-docker0.$HOSTNAME /etc/sysconfig/network-scripts/ifcfg-docker0"
+  config.vm.provision "shell", inline: "cp /vagrant/ifcfg-eth2.$HOSTNAME /etc/sysconfig/network-scripts/ifcfg-eth2"
+  config.vm.provision "shell", inline: "ifup docker0"
   config.vm.provision "shell", inline: "chkconfig docker on"
   config.vm.provision "shell", inline: "service docker status || service docker start"
   config.vm.provision "shell", inline: $consul
@@ -44,21 +49,19 @@ Vagrant.configure("2") do |config|
   config.vm.define "host1" do |host1|
     host1.vm.hostname = "host1"
     host1.vm.network "private_network", ip: "192.168.10.11"
-    host1.vm.network "private_network", ip: "192.168.11.11"
-    host1.vm.network "private_network", ip: "192.168.12.11"
+    host1.vm.network "private_network", ip: "192.168.11.11", auto_config: false
     host1.vm.network "forwarded_port", guest: 80, host: 8001
-    #host1.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host1.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.11.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
   end
 
   config.vm.define "host2" do |host2|
     host2.vm.hostname = "host2"
     host2.vm.network "private_network", ip: "192.168.10.12"
-    host2.vm.network "private_network", ip: "192.168.11.12"
-    host2.vm.network "private_network", ip: "192.168.12.12"
+    host2.vm.network "private_network", ip: "192.168.12.12", auto_config: false
     host2.vm.network "forwarded_port", guest: 80, host: 8002
-    #host2.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host2.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.12.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
   end
 
-  #config.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
+  config.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.11.11 || /usr/local/bin/consul join -wan 192.168.12.12) || true "
   
 end

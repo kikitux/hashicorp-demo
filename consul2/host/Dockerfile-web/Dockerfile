@@ -7,4 +7,5 @@ RUN yum localinstall -y http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-relea
     yum install -y nginx && \
     chkconfig nginx on && \
     cp nginx.conf /etc/
-CMD service sshd restart && consul agent -data-dir=/var/tmp/consul/ -join=$JOIN -dc=$DC
+CMD service sshd restart && service nginx restart && \
+    consul agent -data-dir=/var/tmp/consul/ -join=$JOIN -dc=$DC
