@@ -40,6 +40,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: "grep consul /etc/dnsmasq.conf || (echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload)"
   config.vm.provision "shell", inline: "docker images | grep kikitux/oracle6 || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar 2>&1; docker pull kikitux/oracle6:latest )"
   config.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
+  config.vm.provision "shell", inline: "for DF in /vagrant/Dockerfile* ; do docker build $DF/; done 2>&1"
   config.vm.provision "shell", inline: "yum install -y nginx ; chkconfig nginx on; cp -f /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
 
   config.vm.define "host1" do |host1|

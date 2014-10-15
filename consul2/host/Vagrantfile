@@ -45,11 +45,12 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: "grep PEERDNS /etc/sysconfig/network-scripts/ifcfg-eth0 || echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-eth0"
   config.vm.provision "shell", inline: $resolv
   config.vm.provision "shell", inline: "grep consul /etc/dnsmasq.conf || (echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload)"
-  config.vm.provision "shell", inline: "docker images | grep kikitux/oracle6 || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar 2>&1; docker pull kikitux/oracle6:latest )"
-  config.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
-  config.vm.provision "shell", inline: "yum install -y nginx haproxy ; chkconfig nginx on; cp -f /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
-  config.vm.provision "shell", inline: "chkconfig haproxy on"
-  config.vm.provision "shell", inline: "service haproxy status && service haproxy restart || service haproxy start"
+  config.vm.provision "shell", inline: "docker images | grep kikitux/oracle6-nginx-consul || ( [ -f /vagrant/kikitux_oracle6-nginx-consul.tar ] && docker load < /vagrant/kikitux_oracle6-nginx-consul.tar 2>&1; docker pull kikitux/oracle6-nginx-consul:latest )"
+  config.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6-nginx-consul.tar ] || docker save kikitux/oracle6-nginx-consul > /vagrant/kikitux_oracle6-nginx-consul.tar"
+  config.vm.provision "shell", inline: "for DF in /vagrant/Dockerfile* ; do docker build $DF/; done 2>&1"
+  config.vm.provision "shell", inline: "rpm -q nginx haproxy || yum install -y nginx haproxy"
+  config.vm.provision "shell", inline: "chkconfig nginx on; cp -f /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
+  config.vm.provision "shell", inline: "chkconfig haproxy on ; service haproxy status && service haproxy restart || service haproxy start"
 
   config.vm.define "host1" do |host1|
     host1.vm.hostname = "host1"

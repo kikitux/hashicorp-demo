@@ -4,7 +4,7 @@ Vagrant.configure("2") do |config|
     d.vagrant_machine = "host2"
     d.build_dir = "../host/Dockerfile-web/"
     d.has_ssh = false
-    d.env = {DC: "dc2", JOIN: "192.168.12.12"}
+    d.env = {DC: "dc2"}
   end
 
   (1..3).each do |i|

@@ -7,4 +7,4 @@ RUN mv nginx.conf /etc/nginx/
 ADD check_web.json /usr/local/consul-checks
 CMD cp /etc/hostname /usr/share/nginx/html/index.html && \
     service sshd restart && service nginx restart && \
-    consul agent -data-dir=/var/tmp/consul/ -join=$JOIN -dc=$DC -ui-dir=/usr/local/ui/disk/ -config-dir=/usr/local/consul-checks
+    consul agent -data-dir=/var/tmp/consul/ -join=consul.service.$DC.consul -dc=$DC -ui-dir=/usr/local/ui/disk/ -config-dir=/usr/local/consul-checks
