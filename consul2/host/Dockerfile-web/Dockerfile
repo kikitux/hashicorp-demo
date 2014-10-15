@@ -1,12 +1,9 @@
-FROM kikitux/oracle6-consul:latest
+FROM kikitux/oracle6-nginx-consul:latest
 MAINTAINER Alvaro Miranda kikitux@gmail.com
 EXPOSE 22
 EXPOSE 80
 ADD nginx.conf /
-RUN yum localinstall -y http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm && \
-    yum install -y nginx && \
-    chkconfig nginx on && \
-    mv nginx.conf /etc/nginx/ 
+RUN mv nginx.conf /etc/nginx/ 
 ADD check_web.json /usr/local/consul-checks
 CMD cp /etc/hostname /usr/share/nginx/html/index.html && \
     service sshd restart && service nginx restart && \
