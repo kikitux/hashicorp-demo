@@ -1,0 +1,11 @@
+{
+    "service": {
+        "name": "loadbalancer",
+        "port": 80,
+        "tags": ["haproxy"],
+        "check": {
+            "script": "curl localhost:8000 2>/dev/null >/dev/null",
+            "interval": "10s"
+        }
+    }
+}

@@ -38,23 +38,26 @@ Vagrant.configure("2") do |config|
   #enable daemon and start docker service
   config.vm.provision "shell", inline: "cp /vagrant/ifcfg-docker0.$HOSTNAME /etc/sysconfig/network-scripts/ifcfg-docker0"
   config.vm.provision "shell", inline: "cp /vagrant/ifcfg-eth2.$HOSTNAME /etc/sysconfig/network-scripts/ifcfg-eth2"
-  config.vm.provision "shell", inline: "ifup docker0"
+  config.vm.provision "shell", inline: "ifup eth2 2>&1 ; ifup docker0 2>&1"
   config.vm.provision "shell", inline: "chkconfig docker on"
   config.vm.provision "shell", inline: "service docker status || service docker start"
   config.vm.provision "shell", inline: $consul
   config.vm.provision "shell", inline: "grep PEERDNS /etc/sysconfig/network-scripts/ifcfg-eth0 || echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-eth0"
   config.vm.provision "shell", inline: $resolv
-  config.vm.provision "shell", inline: "echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload"
+  config.vm.provision "shell", inline: "grep consul /etc/dnsmasq.conf || (echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload)"
   config.vm.provision "shell", inline: "docker images | grep kikitux/oracle6 || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar 2>&1; docker pull kikitux/oracle6:latest )"
   config.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
   config.vm.provision "shell", inline: "yum install -y nginx haproxy ; chkconfig nginx on; cp -f /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
+  config.vm.provision "shell", inline: "chkconfig haproxy on"
+  config.vm.provision "shell", inline: "service haproxy status && service haproxy restart || service haproxy start"
 
   config.vm.define "host1" do |host1|
     host1.vm.hostname = "host1"
     host1.vm.network "private_network", ip: "192.168.10.11"
     host1.vm.network "private_network", ip: "192.168.11.11", auto_config: false
     host1.vm.network "forwarded_port", guest: 80, host: 8001
-    host1.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.11.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host1.vm.network "forwarded_port", guest: 8000, host: 8081
+    host1.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.11.11 -dc=dc1 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist -config-dir=/vagrant/consul-checks 2>&1 >> /vagrant/consul_$HOSTNAME.log & "
   end
 
   config.vm.define "host2" do |host2|
@@ -62,9 +65,11 @@ Vagrant.configure("2") do |config|
     host2.vm.network "private_network", ip: "192.168.10.12"
     host2.vm.network "private_network", ip: "192.168.12.12", auto_config: false
     host2.vm.network "forwarded_port", guest: 80, host: 8002
-    host2.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.12.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
+    host2.vm.network "forwarded_port", guest: 8000, host: 8082
+    host2.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.12.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist -config-dir=/vagrant/consul-checks 2>&1 >> /vagrant/consul_$HOSTNAME.log & "
   end
 
-  config.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.11.11 || /usr/local/bin/consul join -wan 192.168.12.12) || true "
-  
+  config.vm.provision "shell", run: "always", inline: "([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.11.11 || /usr/local/bin/consul join -wan 192.168.12.12) || true "
+  config.vm.provision "shell", run: "always", inline: "ping -c2 webserver.service.dc1.consul 2>&1 ; ping_dc1=$? ; ping -c2 webserver.service.dc2.consul 2>&1 ; ping_dc2=$? ; [[ $ping_dc1 -eq 0 || $ping_dc2 -eq 0 ]] && (killall -s 9 consul-haproxy 2>&1 ; nohup /usr/local/bin/consul-haproxy -addr=$HOSTNAME -in /vagrant/haproxy_in.conf -out=/etc/haproxy/haproxy.cfg -backend 'c=webserver@dc1' -backend 'c=webserver@dc2' -reload='service haproxy reload' -quiet 1s 2>&1 >> /vagrant/consul-haproxy_$HOSTNAME.log ) || echo 'no members found for service webserver.. not starting consul-haproxy'  & "
+
 end

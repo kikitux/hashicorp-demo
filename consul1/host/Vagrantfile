@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: $consul
   config.vm.provision "shell", inline: "grep PEERDNS /etc/sysconfig/network-scripts/ifcfg-eth0 || echo PEERDNS=no >> /etc/sysconfig/network-scripts/ifcfg-eth0"
   config.vm.provision "shell", inline: $resolv
-  config.vm.provision "shell", inline: "echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload"
+  config.vm.provision "shell", inline: "grep consul /etc/dnsmasq.conf || (echo 'server=/consul/127.0.0.1#8600' | tee -a /etc/dnsmasq.conf && service dnsmasq force-reload)"
   config.vm.provision "shell", inline: "docker images | grep kikitux/oracle6 || ( [ -f /vagrant/kikitux_oracle6.tar ] && docker load < /vagrant/kikitux_oracle6.tar 2>&1; docker pull kikitux/oracle6:latest )"
   config.vm.provision "shell", inline: "[ -f /vagrant/kikitux_oracle6.tar ] || docker save $(docker images -q) > /vagrant/kikitux_oracle6.tar"
   config.vm.provision "shell", inline: "yum install -y nginx ; chkconfig nginx on; cp -f /vagrant/nginx.conf /etc/nginx/ ; service nginx restart"
@@ -56,6 +56,6 @@ Vagrant.configure("2") do |config|
     host2.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members || /usr/local/bin/consul agent -bind=192.168.10.12 -dc=dc2 -bootstrap-expect=1 -server -data-dir=/var/tmp/consul -ui-dir=/usr/local/ui/dist 2>&1 > /vagrant/consul_$HOSTNAME.log & "
   end
 
-  config.vm.provision "shell", run: "always", inline: "/usr/local/bin/consul members && ([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
+  config.vm.provision "shell", run: "always", inline: "([ ${HOSTNAME#host} -eq 2 ] && /usr/local/bin/consul join -wan 192.168.10.11 || /usr/local/bin/consul join -wan 192.168.10.12) || true "
   
 end
