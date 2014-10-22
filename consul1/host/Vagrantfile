@@ -12,8 +12,8 @@ EOF2
 EOF
 
 $consul = <<-EOF
-CONSULZIP=0.4.0_linux_amd64.zip
-CONSULUIZIP=0.4.0_web_ui.zip
+CONSULZIP=0.4.1_linux_amd64.zip
+CONSULUIZIP=0.4.1_web_ui.zip
 cd /vagrant/
 [ -f $CONSULZIP ] || wget -N https://dl.bintray.com/mitchellh/consul/$CONSULZIP
 [ -f $CONSULUIZIP ] || wget -N https://dl.bintray.com/mitchellh/consul/$CONSULUIZIP
@@ -29,6 +29,10 @@ Vagrant.configure("2") do |config|
   #  vb.gui = true
     vb.customize ["modifyvm", :id, "--memory", "2048"]
     vb.customize ["modifyvm", :id, "--cpus", "2"]
+	vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nictype2", "Am79C973"]
+    vb.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+    vb.customize ["modifyvm", :id, "--nictype3", "Am79C973"]
   end
 
   #enable daemon and start docker service
