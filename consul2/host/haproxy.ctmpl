@@ -2,14 +2,16 @@ global
     daemon
     maxconn 256
 
+
 defaults
     mode http
     balance roundrobin
     timeout connect 500ms
     timeout client 6000ms
     timeout server 6000ms
+    errorfile 503 /vagrant/503.http
 
 listen http-in
-    bind *:8000
-    {{range service "webserver"}}
+    bind *:8000{{range service "webserver@dc1"}}
+    server {{.Node}} {{.Address}}:{{.Port}}{{end}}{{range service "webserver@dc2"}}
     server {{.Node}} {{.Address}}:{{.Port}}{{end}}
