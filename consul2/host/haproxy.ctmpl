@@ -10,5 +10,5 @@ defaults
     timeout server 6000ms
 
 listen http-in
-    bind *:8000{{range .c}}
-    {{.}}{{end}}
+    bind *:8000{{range service "webserver"}}
+    server {{.Node}} {{.Address}}:{{.Port}}{{end}}
