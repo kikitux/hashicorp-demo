@@ -233,4 +233,10 @@ Test `dc2-db` on `dc2`
 		dc2-db.node.dc2.consul has address 172.17.0.5
 		[root@dc2-db ~]#
 
+## consul2
+
+This is a demo for consul-template.
+
+![consul2.gif](https://raw.githubusercontent.com/kikitux/hashicorp-demo/master/consul2.gif)
+
 [Alvaro](http://github.com/kikitux)
