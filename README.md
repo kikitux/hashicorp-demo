@@ -5,6 +5,9 @@ Some demo projects for [hashicorp](http://hashicorp.com) products
 
 #consul
 
+[consul1](https://github.com/kikitux/hashicorp-demo#consul1)
+[consul2](https://github.com/kikitux/hashicorp-demo#consul2)
+
 ##consul1
 
 This is a demo of consul, using Vagrant and Virtualbox.
