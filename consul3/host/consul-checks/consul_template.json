@@ -1,0 +1,11 @@
+{
+    "service": {
+        "name": "consul-template",
+        "port": 80,
+        "tags": ["keepalived-template"],
+        "check": {
+            "script": "sh /vagrant/consul-checks/consul_template.sh",
+            "interval": "5s"
+        }
+    }
+}

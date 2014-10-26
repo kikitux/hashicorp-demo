@@ -1,0 +1,62 @@
+vrrp_instance VI_21 {
+  interface                 eth1
+  state                     MASTER
+  virtual_router_id         21
+  priority                  101
+  authentication {
+    auth_type PASS
+    auth_pass secret
+  }
+  virtual_ipaddress {
+    192.168.10.21/24 dev eth1
+  }
+}
+vrrp_instance VI_22 {
+  interface                 eth1
+  state                     SLAVE
+  virtual_router_id         22
+  priority                  100
+
+  authentication {
+    auth_type PASS
+    auth_pass secret
+  }
+
+  virtual_ipaddress {
+    192.168.10.22/24 dev eth1
+  }
+}
+
+virtual_server 192.168.10.21 8000 {
+    delay_loop 1
+    lb_algo rr
+    lb_kind DC
+    persistence_timeout 0
+    protocol TCP
+
+{{range service "webserver"}}
+    real_server {{.Address}} {{.Port}}{
+        weight 1
+        TCP_CHECK {
+          connect_timeout 1
+          connect_port    80
+        }
+    }{{end}}
+}
+
+virtual_server 192.168.10.22 8000 {
+    delay_loop 1
+    lb_algo rr
+    lb_kind DC
+    persistence_timeout 0
+    protocol TCP
+
+{{range service "webserver"}}
+    real_server {{.Address}} {{.Port}}{
+        weight 1
+        TCP_CHECK {
+          connect_timeout 1
+          connect_port    80
+        }
+    }{{end}}
+}
