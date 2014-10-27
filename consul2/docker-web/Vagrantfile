@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
           d.vagrant_machine = "host#{dc}"
           d.build_dir = "../host/Dockerfile-web/"
           d.has_ssh = false
-          d.env = {DC: "dc#{dc}"}
+          d.env = {DC: "dc#{dc}", IP:ip}
         end
       end
     end

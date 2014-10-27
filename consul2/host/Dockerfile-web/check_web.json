@@ -4,8 +4,8 @@
         "port": 80,
         "tags": ["nginx"],
         "check": {
-            "script": "curl localhost:80 2>/dev/null ",
-            "interval": "3s"
+            "script": "wget -s http://127.0.0.1:80",
+            "interval": "5s"
         }
     }
 }
