@@ -15,7 +15,7 @@ vrrp_instance VI_22 {
   interface                 eth1
   state                     MASTER
   virtual_router_id         22
-  priority                  101
+  priority                  {{key "loadbalancer/role"}}
 
   authentication {
     auth_type PASS
@@ -27,6 +27,7 @@ vrrp_instance VI_22 {
   }
 }
 
+{{range service "webserver"}}
 virtual_server 192.168.10.21 8000 {
     delay_loop 1
     lb_algo rr
@@ -34,14 +35,13 @@ virtual_server 192.168.10.21 8000 {
     persistence_timeout 0
     protocol TCP
 
-{{range service "webserver"}}
     real_server {{.Address}} {{.Port}}{
         weight 1
         TCP_CHECK {
           connect_timeout 1
           connect_port    80
         }
-    }{{end}}
+    }
 }
 
 virtual_server 192.168.10.22 8000 {
@@ -51,12 +51,12 @@ virtual_server 192.168.10.22 8000 {
     persistence_timeout 0
     protocol TCP
 
-{{range service "webserver"}}
     real_server {{.Address}} {{.Port}}{
         weight 1
         TCP_CHECK {
           connect_timeout 1
           connect_port    80
         }
-    }{{end}}
+    }
 }
+{{end}}

@@ -4,8 +4,8 @@
         "port": 8000,
         "tags": ["keepalived"],
         "check": {
-            "script": "curl http://192.168.10.2${HOSTNAME#host}:8000",
-            "interval": "10s"
+            "script": "sh /vagrant/consul-checks/check_ha.sh",
+            "interval": "2s"
         }
     }
 }
