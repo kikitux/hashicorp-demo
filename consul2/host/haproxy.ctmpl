@@ -12,6 +12,5 @@ defaults
     errorfile 503 /vagrant/503.http
 
 listen http-in
-    bind *:8000{{range service "webserver@"}}
-    server {{.Node}} {{.Address}}:{{.Port}}{{end}}{{range service "webserver@"}}
+    bind *:8000{{range service "webserver"}}
     server {{.Node}} {{.Address}}:{{.Port}}{{end}}
