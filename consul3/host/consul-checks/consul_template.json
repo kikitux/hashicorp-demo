@@ -5,7 +5,7 @@
         "tags": ["keepalived-template"],
         "check": {
             "script": "sh /vagrant/consul-checks/consul_template.sh",
-            "interval": "5s"
+            "interval": "2s"
         }
     }
 }

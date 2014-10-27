@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   ["192.168.11.11", "192.168.12.12"].to_enum.with_index(1).each do |ip, dc|
-    (1..3).each do |i|
+    (1..2).each do |i|
       config.vm.define vm_name = "dc#{dc}-web%01d" % i do |web|
         web.vm.hostname = "#{vm_name}"
         web.vm.provider "docker" do |d|
@@ -8,7 +8,7 @@ Vagrant.configure("2") do |config|
           d.vagrant_machine = "host#{dc}"
           d.build_dir = "../host/Dockerfile-web/"
           d.has_ssh = false
-          d.env = {DC: "dc#{dc}"}
+          d.env = {DC: "dc#{dc}", IP:ip}
         end
       end
     end
